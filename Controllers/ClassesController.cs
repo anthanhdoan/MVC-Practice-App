@@ -23,7 +23,9 @@ namespace SchoolManagementApp.MVC.Controllers
         // GET: Classes
         public async Task<IActionResult> Index()
         {
-            var schoolManagementDbContext = _context.Classes.Include(c => c.Course).Include(c => c.Lecturer);
+            var schoolManagementDbContext = _context.Classes
+                .Include(c => c.Course)
+                .Include(c => c.Lecturer);
             return View(await schoolManagementDbContext.ToListAsync());
         }
 
@@ -50,8 +52,7 @@ namespace SchoolManagementApp.MVC.Controllers
         // GET: Classes/Create
         public IActionResult Create()
         {
-            ViewData["CourseId"] = new SelectList(_context.Courses, "Id", "Id");
-            ViewData["LecturerId"] = new SelectList(_context.Lecturers, "Id", "Id");
+            CreateSelectLists();
             return View();
         }
 
@@ -68,8 +69,8 @@ namespace SchoolManagementApp.MVC.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CourseId"] = new SelectList(_context.Courses, "Id", "Id", @class.CourseId);
-            ViewData["LecturerId"] = new SelectList(_context.Lecturers, "Id", "Id", @class.LecturerId);
+
+            CreateSelectLists();
             return View(@class);
         }
 
@@ -86,8 +87,8 @@ namespace SchoolManagementApp.MVC.Controllers
             {
                 return NotFound();
             }
-            ViewData["CourseId"] = new SelectList(_context.Courses, "Id", "Id", @class.CourseId);
-            ViewData["LecturerId"] = new SelectList(_context.Lecturers, "Id", "Id", @class.LecturerId);
+
+            CreateSelectLists();
             return View(@class);
         }
 
@@ -121,10 +122,11 @@ namespace SchoolManagementApp.MVC.Controllers
                         throw;
                     }
                 }
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CourseId"] = new SelectList(_context.Courses, "Id", "Id", @class.CourseId);
-            ViewData["LecturerId"] = new SelectList(_context.Lecturers, "Id", "Id", @class.LecturerId);
+
+            CreateSelectLists();
             return View(@class);
         }
 
@@ -157,19 +159,36 @@ namespace SchoolManagementApp.MVC.Controllers
             {
                 return Problem("Entity set 'SchoolManagementDbContext.Classes'  is null.");
             }
+
             var @class = await _context.Classes.FindAsync(id);
             if (@class != null)
             {
                 _context.Classes.Remove(@class);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool ClassExists(int id)
         {
-          return (_context.Classes?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.Classes?.Any(e => e.Id == id)).GetValueOrDefault();
+        }
+
+        private void CreateSelectLists()
+        {
+            var courses = _context.Courses.Select(q => new
+            {
+                CourseSelection = $"{q.Code} - {q.Name} ({q.Credits} credits)",
+                q.Id
+            });
+            ViewData["CourseId"] = new SelectList(courses, "Id", "CourseSelection");
+            var lecturers = _context.Lecturers.Select(q => new
+            {
+                FullName = $"{q.FirstName} {q.LastName}",
+                q.Id
+            });
+            ViewData["LecturerId"] = new SelectList(lecturers, "Id", "FullName");
         }
     }
 }
